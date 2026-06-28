@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barcode Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .controls { max-width: 600px; margin: 0 auto 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .controls h1 { margin-bottom: 12px; }
+        .controls label { display:block; margin: 8px 0 6px; font-weight:600; }
+        .controls input { width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; }
+        .controls button { margin-top:12px; padding:10px 16px; border-radius:6px; border:none; cursor:pointer; background:#4285f4; color:white; }
+        .controls button.print-btn { background:#34a853; margin-left:8px }
+        .help-text { font-size:12px; color:#666; margin-top:6px }
+
+        /* Print Layout: 6x4 inches */
+        .print-container { width:6in; margin: 16px auto; background:white }
+        .print-page { width:6in; min-height:4in; padding:0.2in; display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:minmax(1.1in,auto); gap:0.08in; border:1px dashed #e0e0e0; margin-bottom:18px }
+        .barcode-item { border:1px solid #eee; padding:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:white }
+        .item-name { font-size:10px; font-weight:600; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+        .item-code { font-size:9px; color:#444; margin-top:6px }
+
+        .error { color:#b00020; background:#fdecea; padding:8px; border-radius:6px; }
+        .success { color:#0b6623; background:#e6f4ea; padding:8px; border-radius:6px }
+
+        @media print {
+            body { background:white; padding:0 }
+            .controls { display:none }
+            .print-page { border:none; margin:0; padding:0.2in }
+        }
+        @page { size:6in 4in; margin:0 }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h1>📊 Barcode Generator</h1>
+
+        <label for="sheetUrl">Google Sheet URL or Sheet ID:</label>
+        <input id="sheetUrl" placeholder="Paste your Google Sheet URL or ID" />
+        <p class="help-text">Sheet must be published / accessible to the API.</p>
+
+        <label for="sheetName">Sheet Name (optional)</label>
+        <input id="sheetName" placeholder="Sheet1" value="Sheet1" />
+
+        <label for="apiKey">Google API Key</label>
+        <input id="apiKey" placeholder="API key" />
+        <p class="help-text">Get one from Google Cloud Console → APIs &amp; Services → Credentials</p>
+
+        <div style="margin-top:12px">
+            <button id="generateBtn">Generate Barcodes</button>
+            <button class="print-btn" id="printBtn">🖨️ Print Labels</button>
+        </div>
+
+        <div id="status" style="margin-top:12px"></div>
+    </div>
+
+    <div class="print-container" id="printContainer"></div>
+
+    <script>
+        function extractSheetId(input) {
+            if (!input) return null;
+            if (input.includes('/')) {
+                const m = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                return m ? m[1] : null;
+            }
+            return input;
+        }
+
+        async function fetchSheetData(sheetId, sheetName, apiKey) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}?key=${apiKey}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Failed to fetch sheet: ${res.status} ${res.statusText}`);
+            const data = await res.json();
+            return data.values || [];
+        }
+
+        function parseItems(rows) {
+            if (!rows || rows.length < 2) return [];
+            const headers = rows[0].map(h => String(h).toLowerCase().trim());
+            const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('item') || h.includes('product'));
+            const codeIdx = headers.findIndex(h => h.includes('code') || h.includes('sku') || h.includes('barcode') || h.includes('id'));
+            const actualNameIdx = nameIdx >= 0 ? nameIdx : 0;
+            const actualCodeIdx = codeIdx >= 0 ? codeIdx : (actualNameIdx === 0 ? 1 : 0);
+            return rows.slice(1).map((row, i) => ({
+                name: row[actualNameIdx] || `Item ${i+1}`,
+                code: row[actualCodeIdx] || `ITEM${String(i+1).padStart(6,'0')}`
+            })).filter(it => it.code);
+        }
+
+        function generateBarcodeLayout(items) {
+            const container = document.getElementById('printContainer');
+            container.innerHTML = '';
+            const itemsPerPage = 9;
+            const pages = Math.max(1, Math.ceil(items.length / itemsPerPage));
+
+            for (let p = 0; p < pages; p++) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'print-page';
+                const startIdx = p * itemsPerPage;
+                const pageItems = items.slice(startIdx, startIdx + itemsPerPage);
+
+                pageItems.forEach((item) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'barcode-item';
+
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'item-name';
+                    nameDiv.textContent = item.name;
+
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('aria-hidden','true');
+
+                    const codeDiv = document.createElement('div');
+                    codeDiv.className = 'item-code';
+                    codeDiv.textContent = item.code;
+
+                    itemDiv.appendChild(nameDiv);
+                    itemDiv.appendChild(svg);
+                    itemDiv.appendChild(codeDiv);
+                    pageDiv.appendChild(itemDiv);
+
+                    try {
+                        JsBarcode(svg, String(item.code), { format: 'CODE128', width: 1.2, height: 40, displayValue: false, margin: 0 });
+                    } catch (e) {
+                        console.error('Failed to generate barcode for', item.code, e);
+                    }
+                });
+
+                container.appendChild(pageDiv);
+            }
+        }
+
+        async function fetchAndGenerate() {
+            const statusEl = document.getElementById('status');
+            const sheetUrl = document.getElementById('sheetUrl').value.trim();
+            const sheetName = document.getElementById('sheetName').value.trim() || 'Sheet1';
+            const apiKey = document.getElementById('apiKey').value.trim();
+
+            if (!sheetUrl || !apiKey) {
+                statusEl.innerHTML = '<div class="error">Please enter both Sheet URL (or ID) and API Key.</div>';
+                return;
+            }
+
+            const sheetId = extractSheetId(sheetUrl);
+            if (!sheetId) {
+                statusEl.innerHTML = '<div class="error">Invalid Google Sheet URL or ID.</div>';
+                return;
+            }
+
+            statusEl.innerHTML = '<div class="success">Loading sheet data…</div>';
+            try {
+                const rows = await fetchSheetData(sheetId, sheetName, apiKey);
+                const items = parseItems(rows);
+                if (!items.length) {
+                    statusEl.innerHTML = '<div class="error">No items found in sheet. Ensure headers and rows exist.</div>';
+                    return;
+                }
+                generateBarcodeLayout(items);
+                statusEl.innerHTML = `<div class="success">✓ Generated ${items.length} barcode(s)</div>`;
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function loadDemo() {
+            const sampleItems = [
+                { name: 'Wireless Mouse', code: 'WM-001234' },
+                { name: 'USB-C Cable', code: 'UC-005678' },
+                { name: 'Laptop Stand', code: 'LS-009012' },
+                { name: 'Keyboard', code: 'KB-003456' },
+                { name: 'Monitor Arm', code: 'MA-007890' },
+                { name: 'Webcam HD', code: 'WC-002345' },
+                { name: 'Desk Lamp', code: 'DL-006789' },
+                { name: 'Mouse Pad XL', code: 'MP-001234' },
+                { name: 'USB Hub', code: 'UH-005678' }
+            ];
+            generateBarcodeLayout(sampleItems);
+            document.getElementById('status').innerHTML = '<div class="success">✓ Demo: Generated 9 sample barcodes</div>';
+        }
+
+        document.getElementById('generateBtn').addEventListener('click', fetchAndGenerate);
+        document.getElementById('printBtn').addEventListener('click', () => window.print());
+        window.addEventListener('load', loadDemo);
+    </script>
+</body>
+</html>

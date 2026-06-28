@@ -1,0 +1,1 @@
+# Barcodes app init
