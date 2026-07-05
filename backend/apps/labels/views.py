@@ -10,9 +10,4 @@ class LabelTemplateViewSet(ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        qs = LabelTemplate.objects.select_related('created_by', 'company')
-        user = self.request.user
-        if user.company:
-            from django.db.models import Q
-            qs = qs.filter(Q(company=user.company) | Q(is_public=True))
-        return qs
+        return LabelTemplate.objects.all()

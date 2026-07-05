@@ -18,7 +18,9 @@ class LabelTemplateSerializer(serializers.ModelSerializer):
         return None
 
     def create(self, validated_data):
-        validated_data['created_by'] = self.context['request'].user
-        if self.context['request'].user.company:
-            validated_data['company'] = self.context['request'].user.company
+        user = self.context['request'].user
+        if user and user.is_authenticated:
+            validated_data['created_by'] = user
+            if hasattr(user, 'company') and user.company:
+                validated_data['company'] = user.company
         return super().create(validated_data)
