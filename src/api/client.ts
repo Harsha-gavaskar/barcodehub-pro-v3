@@ -2,7 +2,7 @@ import axios from 'axios'
 import { store } from '../redux/store'
 import { setToken, logout } from '../redux/slices/authSlice'
 
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
