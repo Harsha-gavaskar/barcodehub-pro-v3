@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={data}>
+          <AreaChart data={data as any[]}>
             <defs>
               <linearGradient id="genGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />

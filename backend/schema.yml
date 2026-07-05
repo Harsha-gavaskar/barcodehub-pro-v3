@@ -1,0 +1,3561 @@
+openapi: 3.0.3
+info:
+  title: BarcodeHub Pro API
+  version: 1.0.0
+  description: REST API for BarcodeHub Pro - Barcode generation and label printing
+    platform
+paths:
+  /api/analytics/dashboard/:
+    get:
+      operationId: analytics_dashboard_retrieve
+      description: GET /api/analytics/dashboard/ — System dashboard counts and chart
+        stats
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/2fa/setup/:
+    post:
+      operationId: auth_2fa_setup_create
+      description: POST /api/auth/2fa/setup/ — Enable 2FA
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/2fa/verify/:
+    post:
+      operationId: auth_2fa_verify_create
+      description: POST /api/auth/2fa/verify/ — Verify and enable 2FA
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/audit-logs/:
+    get:
+      operationId: auth_audit_logs_list
+      description: GET /api/auth/audit-logs/ — List audit logs (admin only)
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/auth/change-password/:
+    post:
+      operationId: auth_change_password_create
+      description: POST /api/auth/change-password/ — Change password
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/forgot-password/:
+    post:
+      operationId: auth_forgot_password_create
+      description: POST /api/auth/forgot-password/ — Send reset email
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/google/:
+    post:
+      operationId: auth_google_create
+      description: POST /api/auth/google/ — OAuth2 Google sign-in
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: POST /api/auth/login/ — Authenticate with email & password
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: POST /api/auth/logout/ — Blacklist refresh token
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: GET/PATCH /api/auth/me/ — Get or update current user
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_me_update
+      description: GET/PATCH /api/auth/me/ — Get or update current user
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_me_partial_update
+      description: GET/PATCH /api/auth/me/ — Get or update current user
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/otp/request/:
+    post:
+      operationId: auth_otp_request_create
+      description: POST /api/auth/otp/request/ — Send OTP to phone
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/otp/verify/:
+    post:
+      operationId: auth_otp_verify_create
+      description: POST /api/auth/otp/verify/ — Verify OTP and get tokens
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: POST /api/auth/register/ — Create new user account
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/users/:
+    get:
+      operationId: auth_users_list
+      description: GET /api/auth/users/ — List all users (admin only)
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+  /api/auth/users/{id}/:
+    get:
+      operationId: auth_users_retrieve
+      description: GET/PATCH/DELETE /api/auth/users/<id>/ — Manage user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_update
+      description: GET/PATCH/DELETE /api/auth/users/<id>/ — Manage user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_partial_update
+      description: GET/PATCH/DELETE /api/auth/users/<id>/ — Manage user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_destroy
+      description: GET/PATCH/DELETE /api/auth/users/<id>/ — Manage user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/barcodes/ai-suggest/:
+    post:
+      operationId: barcodes_ai_suggest_create
+      description: POST /api/barcodes/ai-suggest/ — AI suggests best format
+      tags:
+      - barcodes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/barcodes/batch/:
+    post:
+      operationId: barcodes_batch_create
+      description: POST /api/barcodes/batch/ — Generate multiple barcodes
+      tags:
+      - barcodes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/barcodes/generate/:
+    post:
+      operationId: barcodes_generate_create
+      description: POST /api/barcodes/generate/ — Generate barcode (SVG + PNG)
+      tags:
+      - barcodes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/barcodes/history/:
+    get:
+      operationId: barcodes_history_list
+      description: GET /api/barcodes/history/ — Barcode generation history
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - barcodes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBarcodeList'
+          description: ''
+  /api/google-sheets/config/:
+    get:
+      operationId: google_sheets_config_retrieve
+      description: GET/PUT/PATCH /api/google-sheets/config/ — Manage sheet config
+      tags:
+      - google-sheets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SheetSyncConfig'
+          description: ''
+    put:
+      operationId: google_sheets_config_update
+      description: GET/PUT/PATCH /api/google-sheets/config/ — Manage sheet config
+      tags:
+      - google-sheets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SheetSyncConfigRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SheetSyncConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SheetSyncConfigRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SheetSyncConfig'
+          description: ''
+    patch:
+      operationId: google_sheets_config_partial_update
+      description: GET/PUT/PATCH /api/google-sheets/config/ — Manage sheet config
+      tags:
+      - google-sheets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSheetSyncConfigRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSheetSyncConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSheetSyncConfigRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SheetSyncConfig'
+          description: ''
+  /api/google-sheets/sync/:
+    post:
+      operationId: google_sheets_sync_create
+      description: POST /api/google-sheets/sync/ — Manually trigger sync
+      tags:
+      - google-sheets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/inventory/adjustments/:
+    get:
+      operationId: inventory_adjustments_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStockAdjustmentList'
+          description: ''
+    post:
+      operationId: inventory_adjustments_create
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustment'
+          description: ''
+  /api/inventory/adjustments/{id}/:
+    get:
+      operationId: inventory_adjustments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustment'
+          description: ''
+    put:
+      operationId: inventory_adjustments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustment'
+          description: ''
+    patch:
+      operationId: inventory_adjustments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStockAdjustmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStockAdjustmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStockAdjustmentRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustment'
+          description: ''
+    delete:
+      operationId: inventory_adjustments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/labels/templates/:
+    get:
+      operationId: labels_templates_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - labels
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabelTemplateList'
+          description: ''
+    post:
+      operationId: labels_templates_create
+      tags:
+      - labels
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelTemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabelTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabelTemplateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelTemplate'
+          description: ''
+  /api/labels/templates/{id}/:
+    get:
+      operationId: labels_templates_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - labels
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelTemplate'
+          description: ''
+    put:
+      operationId: labels_templates_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - labels
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelTemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabelTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabelTemplateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelTemplate'
+          description: ''
+    patch:
+      operationId: labels_templates_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - labels
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLabelTemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLabelTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLabelTemplateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelTemplate'
+          description: ''
+    delete:
+      operationId: labels_templates_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - labels
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/notifications/:
+    get:
+      operationId: notifications_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/notifications/read-all/:
+    post:
+      operationId: notifications_read_all_create
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/print/jobs/:
+    get:
+      operationId: print_jobs_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - print
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrintJobList'
+          description: ''
+    post:
+      operationId: print_jobs_create
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintJob'
+          description: ''
+  /api/print/jobs/{id}/:
+    get:
+      operationId: print_jobs_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintJob'
+          description: ''
+    put:
+      operationId: print_jobs_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintJob'
+          description: ''
+    patch:
+      operationId: print_jobs_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrintJobRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrintJobRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrintJobRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintJob'
+          description: ''
+    delete:
+      operationId: print_jobs_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/print/jobs/{id}/cancel/:
+    post:
+      operationId: print_jobs_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrintJobRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintJob'
+          description: ''
+  /api/print/printers/:
+    get:
+      operationId: print_printers_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - print
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrinterList'
+          description: ''
+    post:
+      operationId: print_printers_create
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Printer'
+          description: ''
+  /api/print/printers/{id}/:
+    get:
+      operationId: print_printers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Printer'
+          description: ''
+    put:
+      operationId: print_printers_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Printer'
+          description: ''
+    patch:
+      operationId: print_printers_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrinterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrinterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrinterRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Printer'
+          description: ''
+    delete:
+      operationId: print_printers_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - print
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/products/:
+    get:
+      operationId: products_list
+      description: |-
+        Full CRUD for products with search, filter, sort, pagination.
+        GET /api/products/           — List products
+        POST /api/products/          — Create product
+        GET /api/products/<id>/      — Get product detail
+        PUT /api/products/<id>/      — Update product
+        PATCH /api/products/<id>/    — Partial update
+        DELETE /api/products/<id>/   — Delete product
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+    post:
+      operationId: products_create
+      description: |-
+        Full CRUD for products with search, filter, sort, pagination.
+        GET /api/products/           — List products
+        POST /api/products/          — Create product
+        GET /api/products/<id>/      — Get product detail
+        PUT /api/products/<id>/      — Update product
+        PATCH /api/products/<id>/    — Partial update
+        DELETE /api/products/<id>/   — Delete product
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/products/{id}/:
+    get:
+      operationId: products_retrieve
+      description: |-
+        Full CRUD for products with search, filter, sort, pagination.
+        GET /api/products/           — List products
+        POST /api/products/          — Create product
+        GET /api/products/<id>/      — Get product detail
+        PUT /api/products/<id>/      — Update product
+        PATCH /api/products/<id>/    — Partial update
+        DELETE /api/products/<id>/   — Delete product
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: products_update
+      description: |-
+        Full CRUD for products with search, filter, sort, pagination.
+        GET /api/products/           — List products
+        POST /api/products/          — Create product
+        GET /api/products/<id>/      — Get product detail
+        PUT /api/products/<id>/      — Update product
+        PATCH /api/products/<id>/    — Partial update
+        DELETE /api/products/<id>/   — Delete product
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: products_partial_update
+      description: |-
+        Full CRUD for products with search, filter, sort, pagination.
+        GET /api/products/           — List products
+        POST /api/products/          — Create product
+        GET /api/products/<id>/      — Get product detail
+        PUT /api/products/<id>/      — Update product
+        PATCH /api/products/<id>/    — Partial update
+        DELETE /api/products/<id>/   — Delete product
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    delete:
+      operationId: products_destroy
+      description: |-
+        Full CRUD for products with search, filter, sort, pagination.
+        GET /api/products/           — List products
+        POST /api/products/          — Create product
+        GET /api/products/<id>/      — Get product detail
+        PUT /api/products/<id>/      — Update product
+        PATCH /api/products/<id>/    — Partial update
+        DELETE /api/products/<id>/   — Delete product
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/products/bulk-import/:
+    post:
+      operationId: products_bulk_import_create
+      description: POST /api/products/bulk-import/ — Import from CSV or Excel
+      tags:
+      - products
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/products/categories/:
+    get:
+      operationId: products_categories_list
+      description: CRUD for product categories
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: products_categories_create
+      description: CRUD for product categories
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/products/categories/{id}/:
+    get:
+      operationId: products_categories_retrieve
+      description: CRUD for product categories
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this category.
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    put:
+      operationId: products_categories_update
+      description: CRUD for product categories
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this category.
+        required: true
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: products_categories_partial_update
+      description: CRUD for product categories
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this category.
+        required: true
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: products_categories_destroy
+      description: CRUD for product categories
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this category.
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/products/export-csv/:
+    get:
+      operationId: products_export_csv_retrieve
+      description: GET /api/products/export-csv/ — Download all products as CSV
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/products/stats/:
+    get:
+      operationId: products_stats_retrieve
+      description: GET /api/products/stats/ — Product statistics
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/reports/exports/:
+    get:
+      operationId: reports_exports_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportExportList'
+          description: ''
+    post:
+      operationId: reports_exports_create
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportExportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReportExportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReportExportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportExport'
+          description: ''
+components:
+  schemas:
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        user_email:
+          type: string
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        resource:
+          type: string
+          readOnly: true
+        resource_id:
+          type: string
+          readOnly: true
+        payload:
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+          nullable: true
+        user_agent:
+          type: string
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - id
+      - ip_address
+      - payload
+      - resource
+      - resource_id
+      - timestamp
+      - user
+      - user_agent
+      - user_email
+      - user_name
+    Barcode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          nullable: true
+        value:
+          type: string
+          maxLength: 500
+        format:
+          $ref: '#/components/schemas/FormatB3cEnum'
+        svg_data:
+          type: string
+          readOnly: true
+        png_file:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        width:
+          type: number
+          format: double
+        height:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        display_value:
+          type: boolean
+        background_color:
+          type: string
+          maxLength: 7
+        foreground_color:
+          type: string
+          maxLength: 7
+        label:
+          type: string
+          maxLength: 255
+        generated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - generated_by
+      - id
+      - png_file
+      - svg_data
+      - value
+    BarcodeFormatEnum:
+      enum:
+      - CODE128
+      - CODE39
+      - EAN13
+      - EAN8
+      - UPC
+      - QR
+      - DATAMATRIX
+      - PDF417
+      type: string
+      description: |-
+        * `CODE128` - CODE 128
+        * `CODE39` - CODE 39
+        * `EAN13` - EAN-13
+        * `EAN8` - EAN-8
+        * `UPC` - UPC-A
+        * `QR` - QR Code
+        * `DATAMATRIX` - Data Matrix
+        * `PDF417` - PDF417
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+        children:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - children
+      - created_at
+      - id
+      - name
+    CategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+      required:
+      - name
+    FormatB3cEnum:
+      enum:
+      - CODE128
+      - CODE39
+      - EAN13
+      - EAN8
+      - UPC
+      - QR
+      - DATAMATRIX
+      - PDF417
+      type: string
+      description: |-
+        * `CODE128` - CODE 128
+        * `CODE39` - CODE 39
+        * `EAN13` - EAN-13
+        * `EAN8` - EAN-8
+        * `UPC` - UPC-A
+        * `QR` - QR Code
+        * `DATAMATRIX` - Data Matrix
+        * `PDF417` - PDF417
+    LabelTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        canvas_json: {}
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+        thumbnail_url:
+          type: string
+          readOnly: true
+        width:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        height:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        background_color:
+          type: string
+          maxLength: 7
+        is_default:
+          type: boolean
+        is_public:
+          type: boolean
+        category:
+          type: string
+          maxLength: 100
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by_name
+      - id
+      - name
+      - thumbnail_url
+      - updated_at
+    LabelTemplateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        canvas_json: {}
+        thumbnail:
+          type: string
+          format: binary
+          nullable: true
+        width:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        height:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        background_color:
+          type: string
+          minLength: 1
+          maxLength: 7
+        is_default:
+          type: boolean
+        is_public:
+          type: boolean
+        category:
+          type: string
+          maxLength: 100
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - name
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        message:
+          type: string
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - message
+      - title
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+    PaginatedBarcodeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Barcode'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedLabelTemplateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabelTemplate'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedPrintJobList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintJob'
+    PaginatedPrinterList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Printer'
+    PaginatedProductListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+    PaginatedReportExportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportExport'
+    PaginatedStockAdjustmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockAdjustment'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PaperSizeEnum:
+      enum:
+      - a4
+      - a5
+      - 4x6
+      - 2x1
+      - custom
+      type: string
+      description: |-
+        * `a4` - A4
+        * `a5` - A5
+        * `4x6` - 4x6 inch
+        * `2x1` - 2x1 inch
+        * `custom` - Custom
+    PatchedCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+    PatchedLabelTemplateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        canvas_json: {}
+        thumbnail:
+          type: string
+          format: binary
+          nullable: true
+        width:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        height:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        background_color:
+          type: string
+          minLength: 1
+          maxLength: 7
+        is_default:
+          type: boolean
+        is_public:
+          type: boolean
+        category:
+          type: string
+          maxLength: 100
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+    PatchedPrintJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        paper_size:
+          $ref: '#/components/schemas/PaperSizeEnum'
+        status:
+          $ref: '#/components/schemas/PrintJobStatusEnum'
+        pages:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        barcode_format:
+          type: string
+          maxLength: 20
+        printer:
+          type: string
+          format: uuid
+          nullable: true
+        label_template:
+          type: string
+          format: uuid
+          nullable: true
+        product_ids: {}
+        error_message:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+    PatchedPrinterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        printer_type:
+          $ref: '#/components/schemas/PrinterTypeEnum'
+        status:
+          $ref: '#/components/schemas/PrinterStatusEnum'
+        location:
+          type: string
+          maxLength: 100
+        ip_address:
+          type: string
+          nullable: true
+          minLength: 1
+        port:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        is_default:
+          type: boolean
+    PatchedProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 100
+        barcode:
+          type: string
+          minLength: 1
+          maxLength: 255
+        barcode_format:
+          $ref: '#/components/schemas/BarcodeFormatEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status79aEnum'
+        weight:
+          type: string
+          maxLength: 50
+        dimensions:
+          type: string
+          maxLength: 100
+        manufacturer:
+          type: string
+          maxLength: 255
+        supplier:
+          type: string
+          maxLength: 255
+        country_of_origin:
+          type: string
+          maxLength: 100
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        reserved_stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        low_stock_threshold:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        location:
+          type: string
+          maxLength: 100
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        manufacture_date:
+          type: string
+          format: date
+          nullable: true
+        batch_number:
+          type: string
+          maxLength: 100
+        tags: {}
+        custom_fields: {}
+        image:
+          type: string
+          format: binary
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+    PatchedSheetSyncConfigRequest:
+      type: object
+      properties:
+        spreadsheet_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        sheet_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        auto_sync:
+          type: boolean
+    PatchedStockAdjustmentRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+        notes:
+          type: string
+    PatchedUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        company:
+          type: string
+          format: uuid
+          nullable: true
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        is_active:
+          type: boolean
+        is_email_verified:
+          type: boolean
+        two_fa_enabled:
+          type: boolean
+        last_login_ip:
+          type: string
+          nullable: true
+          minLength: 1
+    PrintJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        paper_size:
+          $ref: '#/components/schemas/PaperSizeEnum'
+        status:
+          $ref: '#/components/schemas/PrintJobStatusEnum'
+        pages:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        barcode_format:
+          type: string
+          maxLength: 20
+        printer:
+          type: string
+          format: uuid
+          nullable: true
+        printer_name:
+          type: string
+          readOnly: true
+        label_template:
+          type: string
+          format: uuid
+          nullable: true
+        product_ids: {}
+        error_message:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - completed_at
+      - created_at
+      - created_by_name
+      - id
+      - printer_name
+      - started_at
+      - title
+    PrintJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        paper_size:
+          $ref: '#/components/schemas/PaperSizeEnum'
+        status:
+          $ref: '#/components/schemas/PrintJobStatusEnum'
+        pages:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        barcode_format:
+          type: string
+          maxLength: 20
+        printer:
+          type: string
+          format: uuid
+          nullable: true
+        label_template:
+          type: string
+          format: uuid
+          nullable: true
+        product_ids: {}
+        error_message:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - title
+    PrintJobStatusEnum:
+      enum:
+      - queued
+      - printing
+      - done
+      - failed
+      - cancelled
+      type: string
+      description: |-
+        * `queued` - Queued
+        * `printing` - Printing
+        * `done` - Done
+        * `failed` - Failed
+        * `cancelled` - Cancelled
+    Printer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        printer_type:
+          $ref: '#/components/schemas/PrinterTypeEnum'
+        status:
+          $ref: '#/components/schemas/PrinterStatusEnum'
+        location:
+          type: string
+          maxLength: 100
+        ip_address:
+          type: string
+          nullable: true
+        port:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+    PrinterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        printer_type:
+          $ref: '#/components/schemas/PrinterTypeEnum'
+        status:
+          $ref: '#/components/schemas/PrinterStatusEnum'
+        location:
+          type: string
+          maxLength: 100
+        ip_address:
+          type: string
+          nullable: true
+          minLength: 1
+        port:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        is_default:
+          type: boolean
+      required:
+      - name
+    PrinterStatusEnum:
+      enum:
+      - online
+      - offline
+      - busy
+      - error
+      type: string
+      description: |-
+        * `online` - Online
+        * `offline` - Offline
+        * `busy` - Busy
+        * `error` - Error
+    PrinterTypeEnum:
+      enum:
+      - laser
+      - thermal
+      - inkjet
+      - dot_matrix
+      type: string
+      description: |-
+        * `laser` - Laser
+        * `thermal` - Thermal
+        * `inkjet` - Inkjet
+        * `dot_matrix` - Dot Matrix
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        sku:
+          type: string
+          maxLength: 100
+        barcode:
+          type: string
+          maxLength: 255
+        barcode_format:
+          $ref: '#/components/schemas/BarcodeFormatEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        category_name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status79aEnum'
+        weight:
+          type: string
+          maxLength: 50
+        dimensions:
+          type: string
+          maxLength: 100
+        manufacturer:
+          type: string
+          maxLength: 255
+        supplier:
+          type: string
+          maxLength: 255
+        country_of_origin:
+          type: string
+          maxLength: 100
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        reserved_stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        available_stock:
+          type: string
+          readOnly: true
+        low_stock_threshold:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        location:
+          type: string
+          maxLength: 100
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        manufacture_date:
+          type: string
+          format: date
+          nullable: true
+        batch_number:
+          type: string
+          maxLength: 100
+        tags: {}
+        custom_fields: {}
+        image:
+          type: string
+          format: uri
+          nullable: true
+        image_url:
+          type: string
+          readOnly: true
+        is_low_stock:
+          type: string
+          readOnly: true
+        is_out_of_stock:
+          type: string
+          readOnly: true
+        last_synced_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - available_stock
+      - barcode
+      - category_name
+      - created_at
+      - created_by_name
+      - id
+      - image_url
+      - is_low_stock
+      - is_out_of_stock
+      - last_synced_at
+      - name
+      - sku
+      - updated_at
+    ProductList:
+      type: object
+      description: Lightweight serializer for list views
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        sku:
+          type: string
+          maxLength: 100
+        barcode:
+          type: string
+          maxLength: 255
+        barcode_format:
+          $ref: '#/components/schemas/BarcodeFormatEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        category_name:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/Status79aEnum'
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        available_stock:
+          type: string
+          readOnly: true
+        is_low_stock:
+          type: string
+          readOnly: true
+        is_out_of_stock:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          maxLength: 100
+        manufacturer:
+          type: string
+          maxLength: 255
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - available_stock
+      - barcode
+      - category_name
+      - id
+      - is_low_stock
+      - is_out_of_stock
+      - name
+      - sku
+      - updated_at
+    ProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 100
+        barcode:
+          type: string
+          minLength: 1
+          maxLength: 255
+        barcode_format:
+          $ref: '#/components/schemas/BarcodeFormatEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status79aEnum'
+        weight:
+          type: string
+          maxLength: 50
+        dimensions:
+          type: string
+          maxLength: 100
+        manufacturer:
+          type: string
+          maxLength: 255
+        supplier:
+          type: string
+          maxLength: 255
+        country_of_origin:
+          type: string
+          maxLength: 100
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        reserved_stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        low_stock_threshold:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        location:
+          type: string
+          maxLength: 100
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        manufacture_date:
+          type: string
+          format: date
+          nullable: true
+        batch_number:
+          type: string
+          maxLength: 100
+        tags: {}
+        custom_fields: {}
+        image:
+          type: string
+          format: binary
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - barcode
+      - name
+      - sku
+    Register:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+      required:
+      - email
+      - first_name
+      - last_name
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        password_confirm:
+          type: string
+          writeOnly: true
+          minLength: 1
+        company_name:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - first_name
+      - last_name
+      - password
+      - password_confirm
+    ReportExport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        report_type:
+          $ref: '#/components/schemas/ReportTypeEnum'
+        format:
+          $ref: '#/components/schemas/ReportExportFormatEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportExportStatusEnum'
+          readOnly: true
+        file:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        file_url:
+          type: string
+          readOnly: true
+        file_size:
+          type: integer
+          readOnly: true
+        error_message:
+          type: string
+          readOnly: true
+        parameters: {}
+        generated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        generated_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - completed_at
+      - created_at
+      - error_message
+      - file
+      - file_size
+      - file_url
+      - format
+      - generated_by
+      - generated_by_name
+      - id
+      - report_type
+      - status
+    ReportExportFormatEnum:
+      enum:
+      - pdf
+      - xlsx
+      - csv
+      type: string
+      description: |-
+        * `pdf` - PDF
+        * `xlsx` - Excel
+        * `csv` - CSV
+    ReportExportRequest:
+      type: object
+      properties:
+        report_type:
+          $ref: '#/components/schemas/ReportTypeEnum'
+        format:
+          $ref: '#/components/schemas/ReportExportFormatEnum'
+        parameters: {}
+      required:
+      - format
+      - report_type
+    ReportExportStatusEnum:
+      enum:
+      - queued
+      - processing
+      - completed
+      - failed
+      type: string
+      description: |-
+        * `queued` - Queued
+        * `processing` - Processing
+        * `completed` - Completed
+        * `failed` - Failed
+    ReportTypeEnum:
+      enum:
+      - labels
+      - products
+      - inventory
+      - print_jobs
+      - audit
+      type: string
+      description: |-
+        * `labels` - Labels Activity
+        * `products` - Product Catalog
+        * `inventory` - Inventory Status
+        * `print_jobs` - Print Jobs History
+        * `audit` - Audit Log Trail
+    RoleEnum:
+      enum:
+      - admin
+      - manager
+      - operator
+      - viewer
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `manager` - Manager
+        * `operator` - Operator
+        * `viewer` - Viewer
+    SheetSyncConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        spreadsheet_id:
+          type: string
+          maxLength: 255
+        sheet_name:
+          type: string
+          maxLength: 100
+        auto_sync:
+          type: boolean
+        last_sync_status:
+          type: string
+          readOnly: true
+        last_sync_message:
+          type: string
+          readOnly: true
+        last_synced_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        company_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_name
+      - created_at
+      - id
+      - last_sync_message
+      - last_sync_status
+      - last_synced_at
+      - spreadsheet_id
+      - updated_at
+    SheetSyncConfigRequest:
+      type: object
+      properties:
+        spreadsheet_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        sheet_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        auto_sync:
+          type: boolean
+      required:
+      - spreadsheet_id
+    Status79aEnum:
+      enum:
+      - active
+      - inactive
+      - discontinued
+      type: string
+      description: |-
+        * `active` - Active
+        * `inactive` - Inactive
+        * `discontinued` - Discontinued
+    StockAdjustment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        reason:
+          type: string
+          maxLength: 255
+        notes:
+          type: string
+        adjusted_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        adjusted_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - adjusted_by
+      - adjusted_by_name
+      - created_at
+      - id
+      - product
+      - product_name
+      - quantity
+      - reason
+    StockAdjustmentRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+        notes:
+          type: string
+      required:
+      - product
+      - quantity
+      - reason
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          maxLength: 20
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        company:
+          type: string
+          format: uuid
+          nullable: true
+        company_name:
+          type: string
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        avatar_url:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+        is_email_verified:
+          type: boolean
+        two_fa_enabled:
+          type: boolean
+        last_login_ip:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - avatar_url
+      - company_name
+      - created_at
+      - email
+      - first_name
+      - full_name
+      - id
+      - last_name
+      - updated_at
+    UserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        company:
+          type: string
+          format: uuid
+          nullable: true
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        is_active:
+          type: boolean
+        is_email_verified:
+          type: boolean
+        two_fa_enabled:
+          type: boolean
+        last_login_ip:
+          type: string
+          nullable: true
+          minLength: 1
+      required:
+      - email
+      - first_name
+      - last_name
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

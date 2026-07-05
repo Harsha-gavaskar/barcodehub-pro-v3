@@ -1,23 +1,21 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useDispatch, useSelector } from 'react-redux'
-import { RootState } from '../../redux/store'
 import {
-  addProduct, updateProduct, deleteProduct,
-  setSearchQuery, setSelectedCategory, setCurrentPage, setSortBy,
-  Product
-} from '../../redux/slices/productSlice'
+  useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct,
+  useCategories, useSyncGoogleSheets, APIProduct
+} from '../../api/products'
+import { useLabelTemplates, LabelTemplate } from '../../api/labels'
+import JsBarcode from 'jsbarcode'
 import toast from 'react-hot-toast'
 import {
   Plus, Search, Filter, Upload, Download, Edit3,
   Trash2, ChevronUp, ChevronDown, Package, X,
   ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
-  RefreshCw, AlertTriangle
+  RefreshCw, AlertTriangle, Printer
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useForm } from 'react-hook-form'
 
-const CATEGORIES = ['All', 'Electronics', 'Accessories', 'Lighting', 'Audio', 'Storage']
 const FORMATS = ['CODE128', 'CODE39', 'EAN13', 'EAN8', 'UPC', 'QR']
 
 const STATUS_BADGE: Record<string, string> = {
@@ -26,27 +24,54 @@ const STATUS_BADGE: Record<string, string> = {
   discontinued: 'badge-red',
 }
 
-function ProductModal({ product, onClose }: { product?: Product; onClose: () => void }) {
-  const dispatch = useDispatch()
-  const { register, handleSubmit, formState: { errors } } = useForm<Product>({
-    defaultValues: product ?? {
-      id: Date.now().toString(),
+function ProductModal({ product, onClose }: { product?: APIProduct; onClose: () => void }) {
+  const { data: categories } = useCategories()
+  const createMutation = useCreateProduct()
+  const updateMutation = useUpdateProduct()
+
+  const { register, handleSubmit, formState: { errors } } = useForm<Partial<APIProduct>>({
+    defaultValues: product ? {
+      ...product,
+      price: product.price ? Number(product.price) : undefined,
+      category: product.category || undefined,
+    } : {
       status: 'active',
-      barcodeFormat: 'CODE128',
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      barcode_format: 'CODE128',
+      stock: 0,
+      low_stock_threshold: 10,
     },
   })
 
-  const onSubmit = (data: Product) => {
-    if (product) {
-      dispatch(updateProduct({ ...data, updatedAt: new Date().toISOString().split('T')[0] }))
-      toast.success('Product updated!')
-    } else {
-      dispatch(addProduct({ ...data, id: Date.now().toString() }))
-      toast.success('Product added!')
+  const onSubmit = (data: Partial<APIProduct>) => {
+    const formattedData = {
+      ...data,
+      price: data.price ? Number(data.price) : null,
+      stock: data.stock ? Number(data.stock) : 0,
+      low_stock_threshold: data.low_stock_threshold ? Number(data.low_stock_threshold) : 10,
+      category: data.category === "" ? null : data.category
     }
-    onClose()
+
+    if (product) {
+      updateMutation.mutate({ id: product.id, data: formattedData }, {
+        onSuccess: () => {
+          toast.success('Product updated!')
+          onClose()
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.detail || 'Failed to update product')
+        }
+      })
+    } else {
+      createMutation.mutate(formattedData, {
+        onSuccess: () => {
+          toast.success('Product added!')
+          onClose()
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.detail || 'Failed to add product')
+        }
+      })
+    }
   }
 
   return (
@@ -78,7 +103,7 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
             </div>
             <div>
               <label className="input-label">Barcode Format</label>
-              <select {...register('barcodeFormat')} className="select-field">
+              <select {...register('barcode_format')} className="select-field">
                 {FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
@@ -89,12 +114,17 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
             <div>
               <label className="input-label">Category</label>
               <select {...register('category')} className="select-field">
-                {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="">None</option>
+                {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
               <label className="input-label">Stock Quantity</label>
               <input type="number" {...register('stock')} className="input-field" placeholder="0" />
+            </div>
+            <div>
+              <label className="input-label">Low Stock Threshold</label>
+              <input type="number" {...register('low_stock_threshold')} className="input-field" placeholder="10" />
             </div>
             <div>
               <label className="input-label">Location</label>
@@ -110,7 +140,7 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
             </div>
             <div>
               <label className="input-label">Expiry Date</label>
-              <input type="date" {...register('expiryDate')} className="input-field" />
+              <input type="date" {...register('expiry_date')} className="input-field" />
             </div>
             <div>
               <label className="input-label">Status</label>
@@ -137,46 +167,241 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
   )
 }
 
+function printProduct(product: APIProduct, template: LabelTemplate | null) {
+  const item = {
+    id: product.id,
+    name: product.name,
+    price: product.price ? String(product.price) : '0.00',
+    hashCode: product.sku || '',
+    barcode: product.barcode,
+    subCode: product.category_name || 'Uncategorized',
+    qty: 1
+  }
+  
+  if (template) {
+    const canvasJson = template.canvas_json || {}
+    const elements = canvasJson.elements || []
+    const width = template.width || 400
+    const height = template.height || 100
+
+    let elementsHTML = ''
+    elements.forEach((el: any) => {
+      if (el.type === 'text') {
+        let displayText = el.text || ''
+        if (displayText.startsWith('SQPR2') || displayText.startsWith('CTZ9') || displayText.startsWith('DCF3') || displayText.startsWith('89042') || displayText.startsWith('IMPORT:')) {
+          displayText = item.name
+        } else if (displayText.includes('₹')) {
+          displayText = `₹ ${item.price}`
+        } else if (displayText.includes('#')) {
+          displayText = item.hashCode || displayText
+        } else if (displayText === '12345678') {
+          displayText = item.barcode
+        }
+        elementsHTML += `
+          <div style="
+            position: absolute;
+            left: ${el.x}px;
+            top: ${el.y}px;
+            font-size: ${el.fontSize || 12}px;
+            font-weight: ${el.fontWeight || 'normal'};
+            color: ${el.color || '#000000'};
+            font-family: sans-serif;
+            white-space: nowrap;
+            transform: ${el.rotate ? `rotate(${el.rotate}deg)` : 'none'};
+            transform-origin: center;
+          ">${displayText}</div>
+        `
+      } else if (el.type === 'barcode') {
+        const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        try {
+          JsBarcode(svgEl, item.barcode, {
+            format: el.format || 'CODE128',
+            width: el.width ? Math.max(1, Math.floor(Number(el.width) / 100)) : 2,
+            height: el.height || 40,
+            displayValue: el.displayValue !== undefined ? el.displayValue : false,
+            margin: 0,
+          })
+          const svgHTML = svgEl.outerHTML
+          elementsHTML += `
+            <div style="
+              position: absolute;
+              left: ${el.x}px;
+              top: ${el.y}px;
+              width: ${el.width || 300}px;
+              height: ${el.height || 50}px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              transform: ${el.rotate ? `rotate(${el.rotate}deg)` : 'none'};
+              transform-origin: center;
+            ">${svgHTML}</div>
+          `
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    })
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { margin: 5mm; }
+          body { margin: 0; font-family: sans-serif; background: white; color: black; display: flex; justify-content: center; align-items: center; height: 100vh; }
+          .label {
+            position: relative;
+            width: ${width}px;
+            height: ${height}px;
+            background-color: ${template.background_color || '#ffffff'};
+            border: 1px dashed #ccc;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="label">
+          ${elementsHTML}
+        </div>
+        <script>window.onload = () => { window.print(); window.close(); }<\/script>
+      </body>
+      </html>
+    `
+    const win = window.open('', '_blank', 'width=500,height=400')
+    if (win) {
+      win.document.write(html)
+      win.document.close()
+    }
+  } else {
+    // Default fallback print
+    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    try {
+      JsBarcode(svgEl, item.barcode, { format: 'CODE128', width: 2, height: 50, displayValue: false, margin: 0 })
+    } catch (e) {
+      toast.error('Invalid barcode value, cannot print.')
+      return
+    }
+    const svgHTML = svgEl.outerHTML
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { margin: 5mm; }
+          body { margin: 0; font-family: sans-serif; background: white; color: black; display: flex; justify-content: center; align-items: center; height: 100vh; }
+          .label {
+            display: flex; flex-direction: column; gap: 4px;
+            padding: 10px; border: 1px dashed #ccc; border-radius: 6px;
+            width: 320px;
+          }
+          .name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+          .row { display: flex; justify-content: space-between; align-items: flex-end; }
+          .price { font-size: 18px; font-weight: 900; }
+          .hash { font-size: 11px; font-weight: 700; }
+          .barcode-wrap { display: flex; justify-content: center; }
+          .barcode-wrap svg { max-width: 100%; }
+          .codes { display: flex; justify-content: space-between; font-size: 9px; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <div class="label">
+          <div class="name">${item.name}</div>
+          <div class="row">
+            <div class="price">&#8377; ${item.price}</div>
+            <div class="hash">${item.hashCode}</div>
+          </div>
+          <div class="barcode-wrap">${svgHTML}</div>
+          <div class="codes"><span>${item.barcode}</span><span>${item.subCode}</span></div>
+        </div>
+        <script>window.onload = () => { window.print(); window.close(); }<\/script>
+      </body>
+      </html>
+    `
+
+    const win = window.open('', '_blank', 'width=450,height=400')
+    if (win) {
+      win.document.write(html)
+      win.document.close()
+    }
+  }
+}
+
 export default function ProductsPage() {
-  const dispatch = useDispatch()
-  const { products, searchQuery, selectedCategory, currentPage, pageSize, sortBy, sortOrder } = useSelector((s: RootState) => s.products)
+  const { data: templates } = useLabelTemplates()
+  const [rowTemplates, setRowTemplates] = useState<Record<string, string>>({})
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('All')
+  const [page, setPage] = useState(1)
+  const [ordering, setOrdering] = useState('-created_at')
+  const pageSize = 12
+
+  const { data: categoriesData } = useCategories()
+  const { data, isLoading, refetch } = useProducts({
+    search,
+    category_name: category,
+    ordering,
+    page,
+    page_size: pageSize,
+  })
+
+  const deleteMutation = useDeleteProduct()
+  const syncMutation = useSyncGoogleSheets()
+
   const [showModal, setShowModal] = useState(false)
-  const [editProduct, setEditProduct] = useState<Product | undefined>()
+  const [editProduct, setEditProduct] = useState<APIProduct | undefined>()
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-  const filtered = products
-    .filter(p => {
-      const q = searchQuery.toLowerCase()
-      return (
-        (selectedCategory === 'All' || p.category === selectedCategory) &&
-        (!q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.barcode.includes(q))
-      )
-    })
-    .sort((a, b) => {
-      const va = String(a[sortBy] ?? '')
-      const vb = String(b[sortBy] ?? '')
-      return sortOrder === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
-    })
-
-  const totalPages = Math.ceil(filtered.length / pageSize)
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-
-  const openEdit = (p: Product) => { setEditProduct(p); setShowModal(true) }
+  const openEdit = (p: APIProduct) => { setEditProduct(p); setShowModal(true) }
   const openAdd = () => { setEditProduct(undefined); setShowModal(true) }
   const closeModal = () => { setShowModal(false); setEditProduct(undefined) }
 
   const handleDelete = (id: string) => {
-    dispatch(deleteProduct(id))
-    setDeleteConfirm(null)
-    toast.success('Product deleted')
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Product deleted')
+        setDeleteConfirm(null)
+      },
+      onError: () => {
+        toast.error('Failed to delete product')
+      }
+    })
   }
 
-  const SortIcon = ({ col }: { col: keyof Product }) => (
-    <span className="ml-1 inline-flex flex-col">
-      <ChevronUp size={10} className={sortBy === col && sortOrder === 'asc' ? 'text-brand-400' : 'text-dark-600'} />
-      <ChevronDown size={10} className={sortBy === col && sortOrder === 'desc' ? 'text-brand-400' : 'text-dark-600'} />
-    </span>
-  )
+  const handleSyncSheets = () => {
+    toast.promise(
+      syncMutation.mutateAsync(),
+      {
+        loading: 'Syncing with Google Sheets...',
+        success: 'Sync complete!',
+        error: 'Failed to sync sheets'
+      }
+    ).then(() => refetch())
+  }
+
+  const toggleSort = (col: string) => {
+    if (ordering === col) {
+      setOrdering(`-${col}`)
+    } else {
+      setOrdering(col)
+    }
+  }
+
+  const SortIcon = ({ col }: { col: string }) => {
+    const isSorted = ordering === col || ordering === `-${col}`
+    const isAsc = ordering === col
+    return (
+      <span className="ml-1 inline-flex flex-col">
+        <ChevronUp size={10} className={isSorted && isAsc ? 'text-brand-400' : 'text-dark-600'} />
+        <ChevronDown size={10} className={isSorted && !isAsc ? 'text-brand-400' : 'text-dark-600'} />
+      </span>
+    )
+  }
+
+  const productsList = data?.results ?? []
+  const totalCount = data?.count ?? 0
+  const totalPages = Math.ceil(totalCount / pageSize)
+
+  const categories = ['All', ...(categoriesData?.map(c => c.name) ?? [])]
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }
   const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }
@@ -187,12 +412,13 @@ export default function ProductsPage() {
       <motion.div variants={item} className="flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-bold text-dark-50">Products</h2>
-          <p className="text-sm text-dark-400">{filtered.length} products{searchQuery ? ` matching "${searchQuery}"` : ''}</p>
+          <p className="text-sm text-dark-400">{totalCount} products total</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button className="btn-secondary text-sm"><Upload size={15} /> Import</button>
-          <button className="btn-secondary text-sm"><Download size={15} /> Export</button>
-          <button className="btn-secondary text-sm"><RefreshCw size={15} /> Sync Sheets</button>
+          <button className="btn-secondary text-sm" onClick={() => window.open('http://localhost:8000/api/products/export-csv/')}><Download size={15} /> Export CSV</button>
+          <button className="btn-secondary text-sm" onClick={handleSyncSheets} disabled={syncMutation.isPending}>
+            <RefreshCw size={15} className={clsx(syncMutation.isPending && 'animate-spin')} /> Sync Sheets
+          </button>
           <button onClick={openAdd} className="btn-primary text-sm" id="add-product-btn">
             <Plus size={15} /> Add Product
           </button>
@@ -204,20 +430,20 @@ export default function ProductsPage() {
         <div className="relative flex-1 min-w-48">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
           <input
-            value={searchQuery}
-            onChange={e => dispatch(setSearchQuery(e.target.value))}
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Search by name, SKU, barcode..."
             className="input-field pl-9 py-2.5"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <button
               key={cat}
-              onClick={() => dispatch(setSelectedCategory(cat))}
+              onClick={() => { setCategory(cat); setPage(1) }}
               className={clsx(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                selectedCategory === cat
+                category === cat
                   ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
                   : 'bg-dark-700/40 text-dark-400 border border-dark-600/30 hover:text-dark-200'
               )}
@@ -235,19 +461,19 @@ export default function ProductsPage() {
             <thead>
               <tr className="border-b border-dark-700/50">
                 {[
-                  { label: 'Product', col: 'name' as keyof Product },
-                  { label: 'SKU', col: 'sku' as keyof Product },
-                  { label: 'Barcode', col: 'barcode' as keyof Product },
-                  { label: 'Category', col: 'category' as keyof Product },
-                  { label: 'Price', col: 'price' as keyof Product },
-                  { label: 'Stock', col: 'stock' as keyof Product },
-                  { label: 'Status', col: 'status' as keyof Product },
-                  { label: 'Actions', col: null },
+                  { label: 'Product', col: 'name' },
+                  { label: 'SKU', col: 'sku' },
+                  { label: 'Barcode', col: 'barcode' },
+                  { label: 'Category', col: 'category__name' },
+                  { label: 'Price', col: 'price' },
+                  { label: 'Stock', col: 'stock' },
+                  { label: 'Status', col: 'status' },
+                  { label: 'Actions', col: '' },
                 ].map(h => (
                   <th
                     key={h.label}
-                    className="table-header text-left cursor-pointer select-none"
-                    onClick={() => h.col && dispatch(setSortBy(h.col))}
+                    className={clsx("table-header text-left select-none", h.col && "cursor-pointer")}
+                    onClick={() => h.col && toggleSort(h.col)}
                   >
                     {h.label}
                     {h.col && <SortIcon col={h.col} />}
@@ -256,12 +482,21 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {paginated.map((p, i) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="table-cell text-center text-dark-500 py-12">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+                      Loading products...
+                    </div>
+                  </td>
+                </tr>
+              ) : productsList.map((p, i) => (
                 <motion.tr
                   key={p.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
+                  transition={{ delay: i * 0.02 }}
                   className="table-row"
                 >
                   <td className="table-cell">
@@ -282,10 +517,10 @@ export default function ProductsPage() {
                     <span className="font-mono text-xs text-dark-400">{p.barcode}</span>
                   </td>
                   <td className="table-cell">
-                    <span className="badge-blue">{p.category}</span>
+                    <span className="badge-blue">{p.category_name || 'Uncategorized'}</span>
                   </td>
                   <td className="table-cell font-semibold text-dark-200">
-                    ${Number(p.price).toFixed(2)}
+                    {p.price ? `$${Number(p.price).toFixed(2)}` : 'N/A'}
                   </td>
                   <td className="table-cell">
                     <span className={clsx('font-medium', p.stock === 0 ? 'text-red-400' : p.stock < 10 ? 'text-amber-400' : 'text-emerald-400')}>
@@ -300,7 +535,30 @@ export default function ProductsPage() {
                     <span className={STATUS_BADGE[p.status]}>{p.status}</span>
                   </td>
                   <td className="table-cell">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
+                      {/* Template Selector */}
+                      <select
+                        value={rowTemplates[p.id] || ''}
+                        onChange={(e) => setRowTemplates(prev => ({ ...prev, [p.id]: e.target.value }))}
+                        className="bg-dark-800 text-[10px] text-dark-300 rounded border border-dark-700/60 px-1.5 py-0.5 outline-none max-w-[100px] cursor-pointer"
+                      >
+                        <option value="">Default Layout</option>
+                        {templates?.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      {/* Print Button */}
+                      <button
+                        onClick={() => {
+                          const activeTemplateId = rowTemplates[p.id] || ''
+                          const activeTemplate = templates?.find(t => t.id === activeTemplateId) || null
+                          printProduct(p, activeTemplate)
+                        }}
+                        className="btn-icon text-brand-400 hover:text-brand-300 hover:bg-brand-500/10"
+                        title="Print Barcode"
+                      >
+                        <Printer size={13} />
+                      </button>
                       <button onClick={() => openEdit(p)} className="btn-icon" title="Edit">
                         <Edit3 size={13} />
                       </button>
@@ -315,7 +573,7 @@ export default function ProductsPage() {
                   </td>
                 </motion.tr>
               ))}
-              {paginated.length === 0 && (
+              {!isLoading && productsList.length === 0 && (
                 <tr>
                   <td colSpan={8} className="table-cell text-center text-dark-500 py-12">
                     No products found
@@ -330,26 +588,26 @@ export default function ProductsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-dark-700/50">
             <p className="text-xs text-dark-500">
-              Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} of {totalCount}
             </p>
             <div className="flex items-center gap-1">
-              <button onClick={() => dispatch(setCurrentPage(1))} disabled={currentPage === 1} className="btn-icon disabled:opacity-30"><ChevronsLeft size={13} /></button>
-              <button onClick={() => dispatch(setCurrentPage(currentPage - 1))} disabled={currentPage === 1} className="btn-icon disabled:opacity-30"><ChevronLeft size={13} /></button>
+              <button onClick={() => setPage(1)} disabled={page === 1} className="btn-icon disabled:opacity-30"><ChevronsLeft size={13} /></button>
+              <button onClick={() => setPage(page - 1)} disabled={page === 1} className="btn-icon disabled:opacity-30"><ChevronLeft size={13} /></button>
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const page = Math.max(1, currentPage - 2) + i
-                if (page > totalPages) return null
+                const pageNum = Math.max(1, page - 2) + i
+                if (pageNum > totalPages) return null
                 return (
                   <button
-                    key={page}
-                    onClick={() => dispatch(setCurrentPage(page))}
-                    className={clsx('w-8 h-8 rounded-lg text-xs font-medium transition-all', page === currentPage ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40' : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/40')}
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={clsx('w-8 h-8 rounded-lg text-xs font-medium transition-all', pageNum === page ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40' : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/40')}
                   >
-                    {page}
+                    {pageNum}
                   </button>
                 )
               })}
-              <button onClick={() => dispatch(setCurrentPage(currentPage + 1))} disabled={currentPage === totalPages} className="btn-icon disabled:opacity-30"><ChevronRight size={13} /></button>
-              <button onClick={() => dispatch(setCurrentPage(totalPages))} disabled={currentPage === totalPages} className="btn-icon disabled:opacity-30"><ChevronsRight size={13} /></button>
+              <button onClick={() => setPage(page + 1)} disabled={page === totalPages} className="btn-icon disabled:opacity-30"><ChevronRight size={13} /></button>
+              <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="btn-icon disabled:opacity-30"><ChevronsRight size={13} /></button>
             </div>
           </div>
         )}
@@ -372,7 +630,7 @@ export default function ProductsPage() {
               <p className="text-sm text-dark-400 mb-5">This action cannot be undone.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteConfirm(null)} className="btn-secondary flex-1">Cancel</button>
-                <button onClick={() => handleDelete(deleteConfirm)} className="btn-danger flex-1">Delete</button>
+                <button onClick={() => handleDelete(deleteConfirm)} className="btn-danger flex-1" disabled={deleteMutation.isPending}>Delete</button>
               </div>
             </motion.div>
           </div>

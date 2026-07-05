@@ -11,12 +11,23 @@
     <meta property="og:description" content="Professional barcode generation and label printing platform" />
     <meta property="og:type" content="website" />
     <title>BarcodeHub Pro</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var err = document.createElement('div');
+        err.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:9999;padding:20px;font-family:monospace;white-space:pre-wrap;';
+        err.innerText = 'Runtime Error: ' + e.message + '\n' + (e.error ? e.error.stack : '');
+        document.body.appendChild(err);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var err = document.createElement('div');
+        err.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:9999;padding:20px;font-family:monospace;white-space:pre-wrap;';
+        err.innerText = 'Unhandled Promise: ' + e.reason;
+        document.body.appendChild(err);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

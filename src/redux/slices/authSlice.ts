@@ -24,10 +24,20 @@ const DEMO_USER: User = {
   company: 'BarcodeHub Industries',
 }
 
+const storedToken = localStorage.getItem('token')
+const storedUser = localStorage.getItem('user')
+
+let parsedUser = null
+try {
+  parsedUser = storedUser ? JSON.parse(storedUser) : null
+} catch (e) {
+  localStorage.removeItem('user')
+}
+
 const initialState: AuthState = {
-  user: DEMO_USER,
-  token: 'demo-jwt-token',
-  isAuthenticated: true,
+  user: parsedUser,
+  token: storedToken,
+  isAuthenticated: !!storedToken,
   isLoading: false,
 }
 
@@ -38,14 +48,19 @@ const authSlice = createSlice({
     setUser(state, action: PayloadAction<User>) {
       state.user = action.payload
       state.isAuthenticated = true
+      localStorage.setItem('user', JSON.stringify(action.payload))
     },
     setToken(state, action: PayloadAction<string>) {
       state.token = action.payload
+      localStorage.setItem('token', action.payload)
     },
     logout(state) {
       state.user = null
       state.token = null
       state.isAuthenticated = false
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      localStorage.removeItem('refresh_token')
     },
     setLoading(state, action: PayloadAction<boolean>) {
       state.isLoading = action.payload

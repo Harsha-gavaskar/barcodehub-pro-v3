@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.inventory',
     'apps.reports',
     'apps.notifications',
+    'apps.google_sheets',
 ]
 
 MIDDLEWARE = [
@@ -176,12 +177,22 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
+USE_REDIS = config('USE_REDIS', default=False, cast=bool)
+
+if USE_REDIS:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'barcodehub-pro-local-cache',
+        }
+    }
 
 # ── AWS S3 ─────────────────────────────────────────────────────
 USE_S3 = config('USE_S3', default=False, cast=bool)

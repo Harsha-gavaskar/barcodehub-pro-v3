@@ -8,6 +8,8 @@ import toast from 'react-hot-toast'
 import { QrCode, Eye, EyeOff, Mail, Lock, ArrowRight, Zap, BarChart3, Printer } from 'lucide-react'
 import clsx from 'clsx'
 
+import axios from 'axios'
+
 interface LoginForm {
   email: string
   password: string
@@ -28,13 +30,32 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>()
 
   const onLogin = async (data: LoginForm) => {
-    setIsLoading(true)
-    await new Promise(r => setTimeout(r, 1000))
-    dispatch(setUser({ id: '1', name: 'Alex Johnson', email: data.email, role: 'admin', company: 'BarcodeHub Industries' }))
-    dispatch(setToken('jwt-demo-token'))
-    toast.success('Welcome back!')
-    navigate('/')
-    setIsLoading(false)
+    try {
+      setIsLoading(true)
+      const res = await axios.post('http://localhost:8000/api/auth/login/', {
+        email: data.email,
+        password: data.password,
+      })
+      const { access, refresh, user: apiUser } = res.data
+      
+      localStorage.setItem('refresh_token', refresh)
+      dispatch(setToken(access))
+      dispatch(setUser({
+        id: apiUser.id,
+        name: `${apiUser.first_name} ${apiUser.last_name}`.trim(),
+        email: apiUser.email,
+        role: apiUser.role,
+        company: apiUser.company_name || 'BarcodeHub Industries',
+      }))
+      
+      toast.success('Welcome back!')
+      navigate('/')
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password'
+      toast.error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const onGoogleLogin = async () => {
