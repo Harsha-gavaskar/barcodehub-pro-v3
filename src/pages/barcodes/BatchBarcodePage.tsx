@@ -702,7 +702,7 @@ export default function BatchBarcodePage() {
   const [previewItem, setPreviewItem] = useState<TableItem | null>(null)
   
   // Template states
-  const { data: templates } = useLabelTemplates()
+  const { data: templates = [] } = useLabelTemplates()
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   
   // Wizard states
@@ -722,31 +722,84 @@ export default function BatchBarcodePage() {
         const data = e.target?.result
         const workbook = XLSX.read(data, { type: 'binary' })
         const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-        const json = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 })
+        const rows = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 })
 
-        if (json.length === 0) {
-          toast.error('The uploaded file is empty')
+        if (rows.length < 2) {
+          toast.error('The uploaded file is empty or missing data rows')
           return
         }
 
-        // Extract first row as headers, represent numbers/blanks as column index
-        const firstRow = json[0] || []
-        const headers = firstRow.map((cell: any, idx: number) => 
+        const headers = (rows[0] || []).map((cell: any, idx: number) => 
           cell !== null && cell !== undefined ? String(cell).trim() : `Column ${idx + 1}`
         )
 
-        setUploadedData({ rows: json, headers })
+        // Auto-detect mappings
+        const mapping = { nameIdx: -1, priceIdx: -1, hashIdx: -1, barcodeIdx: -1, subCodeIdx: -1, qtyIdx: -1 }
+        headers.forEach((h: string, idx: number) => {
+          const lower = String(h).toLowerCase()
+          if (lower.includes('name') || lower.includes('title') || lower.includes('product') || lower.includes('item')) {
+            if (mapping.nameIdx === -1) mapping.nameIdx = idx
+          } else if (lower.includes('price') || lower.includes('rate') || lower.includes('cost') || lower.includes('mrp')) {
+            if (mapping.priceIdx === -1) mapping.priceIdx = idx
+          } else if (lower.includes('hash') || lower.includes('tag')) {
+            if (mapping.hashIdx === -1) mapping.hashIdx = idx
+          } else if (lower.includes('barcode') || lower.includes('sku') || lower.includes('code') || lower.includes('upc') || lower.includes('ean')) {
+            if (lower.includes('sub')) mapping.subCodeIdx = idx
+            else if (mapping.barcodeIdx === -1) mapping.barcodeIdx = idx
+          } else if (lower.includes('qty') || lower.includes('quantity') || lower.includes('count')) {
+            if (mapping.qtyIdx === -1) mapping.qtyIdx = idx
+          }
+        })
+        
+        // Fallbacks
+        if (mapping.nameIdx === -1 && headers.length > 0) mapping.nameIdx = 0
+        if (mapping.priceIdx === -1 && headers.length > 1) mapping.priceIdx = 1
+        if (mapping.hashIdx === -1 && headers.length > 2) mapping.hashIdx = 2
+        if (mapping.barcodeIdx === -1 && headers.length > 3) mapping.barcodeIdx = 3
+        if (mapping.subCodeIdx === -1 && headers.length > 4) mapping.subCodeIdx = 4
+        if (mapping.qtyIdx === -1 && headers.length > 5) mapping.qtyIdx = 5
+
+        const mappedItems: TableItem[] = []
+        const seenBarcodes = new Set<string>()
+
+        const generateUniqueId = () => {
+          let id
+          do { id = 'BH-' + Math.random().toString(36).substring(2, 8).toUpperCase() }
+          while (seenBarcodes.has(id))
+          return id
+        }
+
+        const dataRows = rows.slice(1)
+        dataRows.forEach((row: any, idx: number) => {
+          if (!row || row.length === 0) return
+          const name = mapping.nameIdx !== -1 && row[mapping.nameIdx] !== undefined ? String(row[mapping.nameIdx]).trim() : 'Unknown Product'
+          const price = mapping.priceIdx !== -1 && row[mapping.priceIdx] !== undefined ? String(row[mapping.priceIdx]).trim() : '0.00'
+          const hashCode = mapping.hashIdx !== -1 && row[mapping.hashIdx] !== undefined ? String(row[mapping.hashIdx]).trim() : ''
+          let barcode = mapping.barcodeIdx !== -1 && row[mapping.barcodeIdx] !== undefined ? String(row[mapping.barcodeIdx]).trim() : ''
+          const subCode = mapping.subCodeIdx !== -1 && row[mapping.subCodeIdx] !== undefined ? String(row[mapping.subCodeIdx]).trim() : ''
+          let qty = 1
+          if (mapping.qtyIdx !== -1 && row[mapping.qtyIdx] !== undefined && !isNaN(Number(row[mapping.qtyIdx]))) {
+            qty = Math.max(1, Number(row[mapping.qtyIdx]))
+          }
+          if (barcode && !barcode.match(/^[a-zA-Z0-9-\.]+$/)) barcode = ''
+          if (!barcode || seenBarcodes.has(barcode)) barcode = generateUniqueId()
+          seenBarcodes.add(barcode)
+
+          mappedItems.push({ id: `item-${Date.now()}-${idx}`, name, price, hashCode, barcode, subCode, qty })
+        })
+
+        if (mappedItems.length === 0) {
+          toast.error('No products found to import')
+          return
+        }
+
+        setItems(mappedItems)
+        toast.success(`Successfully imported ${mappedItems.length} products!`)
       } catch (err) {
         toast.error('Failed to read file. Make sure it is a valid Excel/CSV document.')
       }
     }
     reader.readAsBinaryString(file)
-  }
-
-  const handleConfirmWizard = (mappedItems: TableItem[], templateId: string) => {
-    setItems(mappedItems)
-    setSelectedTemplateId(templateId)
-    setUploadedData(null)
   }
 
   const updateQuantity = (id: string, newQty: number) =>
@@ -964,14 +1017,7 @@ export default function BatchBarcodePage() {
 
       {/* Modals */}
       <AnimatePresence>
-        {uploadedData && templates && (
-          <ImportWizardModal
-            uploadedData={uploadedData}
-            templates={templates}
-            onConfirm={handleConfirmWizard}
-            onClose={() => setUploadedData(null)}
-          />
-        )}
+
         {previewItem && (
           <PreviewModal
             item={previewItem}

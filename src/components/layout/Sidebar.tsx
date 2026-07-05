@@ -3,12 +3,12 @@ import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RootState } from '../../redux/store'
 import { toggleSidebar } from '../../redux/slices/uiSlice'
-import { logout } from '../../redux/slices/authSlice'
+
 import {
   LayoutDashboard, Package, QrCode, Layers, Printer, FileSpreadsheet,
   BarChart3, Warehouse, FileText, Settings, Users,
-  LogOut, ChevronLeft, ChevronRight, Zap, ShoppingCart,
-  Bell, CreditCard
+  ChevronLeft, ChevronRight, Zap, ShoppingCart,
+  Bell, CreditCard, HelpCircle
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { label: 'Reports', icon: FileText, path: '/reports' },
   { section: 'System' },
   { label: 'Settings', icon: Settings, path: '/settings' },
+  { label: 'Printer Guide', icon: HelpCircle, path: '/printer-guide' },
   { label: 'Admin Panel', icon: Users, path: '/admin' },
   { label: 'Billing', icon: CreditCard, path: '/settings?tab=billing' },
 ]
@@ -37,10 +38,7 @@ export default function Sidebar() {
   const collapsed = useSelector((s: RootState) => s.ui.sidebarCollapsed)
   const user = useSelector((s: RootState) => s.auth.user)
 
-  const handleLogout = () => {
-    dispatch(logout())
-    navigate('/login')
-  }
+
 
   return (
     <motion.aside
@@ -152,11 +150,6 @@ export default function Sidebar() {
               </motion.div>
             )}
           </AnimatePresence>
-          {!collapsed && (
-            <button onClick={handleLogout} className="btn-icon shrink-0" title="Logout">
-              <LogOut size={14} />
-            </button>
-          )}
         </div>
       </div>
     </motion.aside>

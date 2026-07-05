@@ -51,7 +51,6 @@ apiClient.interceptors.response.use(
         // Clear auth and logout
         store.dispatch(logout())
         localStorage.removeItem('refresh_token')
-        window.location.href = '/login'
         return Promise.reject(err)
       }
     }
