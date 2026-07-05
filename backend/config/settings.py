@@ -78,16 +78,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ── Database ───────────────────────────────────────────────────
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
-        'NAME': config('DB_NAME', default='barcodehub'),
-        'USER': config('DB_USER', default='barcodehub_user'),
-        'PASSWORD': config('DB_PASSWORD', default='barcodehub_pass'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
+    'default': config(
+        'DATABASE_URL',
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        cast=dj_database_url.parse
+    )
 }
+
 
 # ── Custom User Model ──────────────────────────────────────────
 AUTH_USER_MODEL = 'users.User'
